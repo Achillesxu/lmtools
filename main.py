@@ -9,4 +9,16 @@
 @File : main.py
 @desc :
 """
+import streamlit as st
+from pathlib import Path
 
+
+pages = {
+    '图像处理': [
+        st.Page(Path('spages/images_remove_object.py'), title='删除图像对象', icon='🆑'),
+        st.Page(Path('spages/empty.py'), title='', icon='🆑')
+    ]
+}
+
+pg = st.navigation(pages)
+pg.run()

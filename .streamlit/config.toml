@@ -1,0 +1,9 @@
+[global]
+[logger]
+level = "info"
+messageFormat = "[%(asctime)s|%(levelname)s|%(filename)s] %(message)s"
+[client]
+[server]
+maxUploadSize = 300
+enableWebsocketCompression = true
+[browser]
