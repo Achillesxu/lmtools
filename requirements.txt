@@ -2,3 +2,6 @@ streamlit~=1.36
 streamlit-drawable-canvas
 loguru
 watchdog
+opencv-python-headless
+torch
+torchvision

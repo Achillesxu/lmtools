@@ -9,14 +9,36 @@
 @File : images_remove_object.py
 @desc :
 """
+import io
+import os
 from copy import deepcopy
 
 import numpy as np
 import streamlit as st
 from PIL import Image  # noqa
-import io
-
 from streamlit_drawable_canvas import st_canvas
+
+from st_paint import paint_process
+
+
+def image_download_button(pil_image, filename: str, fmt: str, label="Download"):
+    if fmt not in ["jpg", "png"]:
+        raise Exception(f"Unknown image format (Available: {fmt} - case sensitive)")
+
+    pil_format = "JPEG" if fmt == "jpg" else "PNG"
+    file_format = "jpg" if fmt == "jpg" else "png"
+    mime = "image/jpeg" if fmt == "jpg" else "image/png"
+
+    buf = io.BytesIO()
+    pil_image.save(buf, format=pil_format)
+
+    return st.download_button(
+        label=label,
+        data=buf.getvalue(),
+        file_name=f'{filename}.{file_format}',
+        mime=mime,
+    )
+
 
 if 'reuse_image' not in st.session_state:
     st.session_state.reuse_image = None
@@ -40,13 +62,22 @@ with st.sidebar:
         """
     )
 
-upload_img = st.file_uploader(
-    "上传图片",
-    key='upload_img_lm_tool',
-    accept_multiple_files=False,
-    type=["png", "jpg", "jpeg"],
-    help='上传单张图片, 支持图片格式: png，jpg，jpeg'
-)
+st_cols = st.columns(2)
+
+with st_cols[0]:
+    upload_img = st.file_uploader(
+        "上传图片",
+        key='upload_img_lm_tool',
+        accept_multiple_files=False,
+        type=["png", "jpg", "jpeg"],
+        help='上传单张图片, 支持图片格式: png，jpg，jpeg'
+    )
+
+with st_cols[1]:
+    stroke_width = st.slider("工具刷", 5, 50, 25, 5)
+
+st.divider()
+st.write("**没错！现在请用刷子（或涂抹工具）涂抹你想去除的图像部分.**")
 
 if upload_img is not None:
     if st.session_state.reuse_image is not None:
@@ -67,9 +98,6 @@ if upload_img is not None:
             new_width = int((max_size / img_height) * img_width)
         img_input = img_input.resize((new_width, new_height))
 
-    stroke_width = st.slider("Brush size", 0, 50, 30, 5)
-    st.write("**没错！现在请用刷子（或涂抹工具）涂抹你想去除的图像部分.**")
-
     # Canvas size logic
     canvas_bg = deepcopy(img_input)
     aspect_ratio = canvas_bg.width / canvas_bg.height
@@ -83,6 +111,7 @@ if upload_img is not None:
         stroke_color="rgba(255, 0, 255, 1)",
         stroke_width=stroke_width,
         background_image=canvas_bg,
+        update_streamlit=True,
         width=canvas_bg.width,
         height=canvas_bg.height,
         drawing_mode="freedraw",
@@ -101,12 +130,25 @@ if upload_img is not None:
             (im[:, :, 1] == 0) &
             (im[:, :, 2] == 255)
         )
-        im[background] = [0,0,0,255]
-        im[drawing] = [0,0,0,0] # RGBA
+        im[background] = [0, 0, 0, 255]
+        im[drawing] = [0, 0, 0, 0]  # RGBA
 
-        reuse = False
+        submit_btn = st.button('Submit')
 
-        if st.button('Submit'):
-            pass
+        if submit_btn:
+            with st.spinner('AI is doing the magic!'):
+                output = paint_process(np.array(img_input), np.array(im))
+                img_output = Image.fromarray(output).convert("RGB")
 
+            st.write("AI has finished the job!")
+            st.image(img_output)
 
+            uploaded_name = os.path.splitext(upload_img.name)[0]
+
+            image_download_button(
+                label="Download Image",
+                pil_image=img_output,
+                filename=uploaded_name,
+                fmt="jpg",
+            )
+            st.info("**提示**: 如果结果不完美，你可以先下载它，然后上传，再删除这些瑕疵")

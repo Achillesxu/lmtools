@@ -5,3 +5,4 @@
 @Mobile : 18682193124
 @desc :
 """
+from .paint import paint_process
