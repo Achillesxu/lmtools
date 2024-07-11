@@ -16,8 +16,8 @@ st.set_page_config(layout="wide")
 
 pages = {
     '图像处理': [
+        st.Page(Path('spages/images_remove_background.py'), title='删除图像背景', icon='🆑'),
         st.Page(Path('spages/images_remove_object.py'), title='删除图像对象', icon='🆑'),
-        st.Page(Path('spages/empty.py'), title='', icon='🆑')
     ]
 }
 
