@@ -11,6 +11,7 @@
 """
 import io
 
+from streamlit_extras.grid import grid
 import streamlit as st
 from PIL import Image
 from loguru import logger
@@ -38,40 +39,46 @@ with st.sidebar:
     )
 
 # main
+layout_grid = grid(2,1,1, gap='medium', vertical_align='center')
 
 
-cols = st.columns(2)
+upload_rbg_img = layout_grid.file_uploader(
+    "上传图片",
+    key='upload_rbg_img_lm_tool',
+    accept_multiple_files=False,
+    type=["png", "jpg", "jpeg"],
+    help='上传单张图片, 支持图片格式: png, jpg, jpeg'
+)
 
-with cols[0]:
-    upload_rbg_img = st.file_uploader(
-        "上传图片",
-        key='upload_rbg_img_lm_tool',
-        accept_multiple_files=False,
-        type=["png", "jpg", "jpeg"],
-        help='上传单张图片, 支持图片格式: png，jpg，jpeg'
-    )
-
-with cols[1]:
-    start_btn = st.button(label='去背景')
+start_btn = layout_grid.button(label='去背景', use_container_width=True)
 
 
-if upload_rbg_img is not None and start_btn:
-    st.image(upload_rbg_img.read(), caption='原始图片')
+if upload_rbg_img is not None:
+    layout_grid.image(upload_rbg_img.read(), caption='原始图片')
 
+if start_btn and upload_rbg_img is not None:
     with st.spinner('AI is doing the magic!'):
         model_name = ModelDict[model_select]
         logger.info(f'select model: {model_name}')
         sess = get_model_session(m_name=model_name)
         img_input = Image.open(io.BytesIO(upload_rbg_img.getvalue()))
-        img_bytes = remove(img_input, session=sess, model_path=f'./assets/rm_bg/{model_name}.onnx')
+        pil_img = remove(img_input, session=sess, model_path=f'./assets/rm_bg/{model_name}.onnx')
 
-    st.image(img_bytes, caption='去背景图片')
+    layout_grid.image(pil_img, caption='去背景图片')
 
-    rbg_name = upload_rbg_img.name.rsplit('.', maxsplit=1)[0] + '_rbg' + '.png'
+    img_path_parts = upload_rbg_img.name.rsplit('.', maxsplit=1)
 
-    st.download_button(
-        label='图片下载',
-        data=Image.fromarray(img_bytes),
-        key='download_rbg_img_lm_tool',
-        file_name=rbg_name,
-    )
+    rbg_name = img_path_parts[0] + '_rbg.png'
+
+    logger.info(f'rbg name: {rbg_name}')
+
+    pil_img.save(rbg_name, format='PNG')
+
+    # layout_grid.download_button(
+    #     label='图片下载',
+    #     data=pil_img.tobytes('JPEG'),
+    #     key='download_rbg_img_lm_tool',
+    #     file_name=rbg_name,
+    #     fmt="jpg",
+    #     use_container_width=True
+    # )
