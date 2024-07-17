@@ -1,4 +1,5 @@
 streamlit~=1.36
+streamlit-extras
 streamlit-drawable-canvas
 loguru
 watchdog
