@@ -29,6 +29,13 @@ def get_model_session(m_name: str):
     return new_session(model_name=m_name)
 
 
+def get_png_bytes(img: Image) -> bytes:
+    byte_arr = io.BytesIO()
+    img.save(byte_arr, format='PNG')
+    byte_arr.seek(0)
+    return byte_arr.getvalue()
+
+
 # side
 with st.sidebar:
     model_select = st.selectbox(
@@ -68,17 +75,11 @@ if start_btn and upload_rbg_img is not None:
 
     img_path_parts = upload_rbg_img.name.rsplit('.', maxsplit=1)
 
-    rbg_name = img_path_parts[0] + '_rbg.png'
+    png_name = img_path_parts[0] + '_rbg.png'
 
-    logger.info(f'rbg name: {rbg_name}')
-
-    pil_img.save(rbg_name, format='PNG')
-
-    # layout_grid.download_button(
-    #     label='图片下载',
-    #     data=pil_img.tobytes('JPEG'),
-    #     key='download_rbg_img_lm_tool',
-    #     file_name=rbg_name,
-    #     fmt="jpg",
-    #     use_container_width=True
-    # )
+    st.download_button(
+        '保存图片',
+        file_name=png_name,
+        mime='image/png',
+        data=get_png_bytes(pil_img),
+    )
